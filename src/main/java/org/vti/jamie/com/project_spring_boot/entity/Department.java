@@ -9,6 +9,7 @@ import lombok.Setter;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Department")
@@ -24,6 +25,18 @@ public class Department {
     @Column(name = "DepartmentName",
             nullable = false, unique = true, length = 30)
     private String name;
+
+    @Column(name = "DeletedAt")
+    @Setter(AccessLevel.NONE)
+    private LocalDateTime deletedAt;
+
+    public void softDelete() {
+        if (deletedAt == null) deletedAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        deletedAt = null;
+    }
 
     @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
     @Setter(AccessLevel.NONE)

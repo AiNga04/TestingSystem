@@ -10,7 +10,8 @@ The `/api` prefix is configured with `server.servlet.context-path=/api` in appli
 | GET | `/{id}` | 200 |
 | GET | `/` | 200, paginated data |
 | PUT | `/{id}` | 200 |
-| DELETE | `/{id}` | 200, data = null |
+| DELETE | `/{id}` | 200, soft delete, data = null |
+| PATCH | `/{id}/restore` | 200, restored department |
 
 POST/PUT body:
 
@@ -30,7 +31,7 @@ All responses share the same envelope:
   "status": 200,
   "code": "SUCCESS",
   "message": "Lấy phòng ban thành công",
-  "data": {"departmentId": 1, "departmentName": "Engineering"},
+  "data": {"departmentId": 1, "departmentName": "Engineering", "deletedAt": null},
   "errors": {},
   "timestamp": "2026-10-08T12:00:00Z"
 }
@@ -51,3 +52,20 @@ Errors return data = null and success = false. HTTP status matches the status fi
 This changes the earlier raw response bodies and changes DELETE from 204 to 200. Clients must read results from `data`.
 
 Run `mvnw.cmd test` from the project root with `.env` and MySQL initialized using the SQL scripts. Department API integration tests run in rollback transactions, preserving records; MySQL auto-increment counters may advance.
+
+## Soft delete and restore
+
+`GET /api/v1/departments` or `GET /api/v1/departments?deleted=false` returns active departments only.
+`GET /api/v1/departments?deleted=true` returns deleted departments only. Both support keyword, paging and sorting.
+`DELETE /api/v1/departments/{id}` marks DeletedAt without removing the row.
+`PATCH /api/v1/departments/{id}/restore` clears DeletedAt and keeps the same ID and name. No request body is required.
+
+Department responses include deletedAt (null when active). GET by ID and PUT only accept active departments. Repeating DELETE on a deleted department returns 404; restoring an active department returns 409. Names remain unique across active and deleted rows; restore the old department instead of creating a new one with its name. Departments with accounts still cannot be deleted (409).
+
+New Docker databases get DeletedAt from 01_init.sql. Existing databases require the idempotent migration below. This migration preserves existing rows; all existing departments start active. Run from the project root:
+
+```powershell
+Get-Content database/migrations/03_department_soft_delete.sql -Raw | docker compose -f docker/docker-compose.yml exec -T mysql sh -c 'MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysql -u root'
+```
+
+Restart Spring Boot after applying the migration and updating the code. Do not delete the Docker volume to apply this change.

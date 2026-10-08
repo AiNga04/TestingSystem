@@ -40,6 +40,7 @@ public class DepartmentController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<DepartmentResponse>>> getAll(
             @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "false") boolean deleted,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "departmentId") String sortBy,
@@ -53,7 +54,7 @@ public class DepartmentController {
                 .orElseThrow(() -> new IllegalArgumentException("direction chỉ nhận asc hoặc desc"));
         Sort sort = Sort.by(sortDirection, property);
         if (!property.equals("id")) sort = sort.and(Sort.by("id"));
-        var result = service.getAll(keyword, PageRequest.of(page, size, sort));
+        var result = service.getAll(keyword, deleted, PageRequest.of(page, size, sort));
         return ResponseEntity.ok(ApiResponse.success(200, "Lấy danh sách phòng ban thành công", PageResponse.from(result)));
     }
 
@@ -64,9 +65,14 @@ public class DepartmentController {
         return ResponseEntity.ok(ApiResponse.success(200, "Cập nhật phòng ban thành công", service.update(id, request)));
     }
 
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<ApiResponse<DepartmentResponse>> restore(
+            @PathVariable @Min(1) @Max(255) Short id) {
+        return ResponseEntity.ok(ApiResponse.success(200, "Khôi phục phòng ban thành công", service.restore(id)));
+    }
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable @Min(1) @Max(255) Short id) {
         service.delete(id);
-        return ResponseEntity.ok(ApiResponse.success(200, "Xóa phòng ban thành công", null));
+        return ResponseEntity.ok(ApiResponse.success(200, "Đã chuyển phòng ban vào danh sách đã xóa", null));
     }
 }

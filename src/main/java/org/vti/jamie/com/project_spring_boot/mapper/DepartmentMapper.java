@@ -15,7 +15,8 @@ public class DepartmentMapper {
     public DepartmentResponse toResponse(Department entity) {
         return new DepartmentResponse(
                 entity.getId(),
-                entity.getName()
+                entity.getName(),
+                entity.getDeletedAt()
         );
     }
 

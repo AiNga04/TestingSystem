@@ -13,6 +13,7 @@ public interface DepartmentService {
 
     Page<DepartmentResponse> getAll(
             String keyword,
+            boolean deleted,
             Pageable pageable
     );
 
@@ -22,4 +23,6 @@ public interface DepartmentService {
     );
 
     void delete(Short id);
+
+    DepartmentResponse restore(Short id);
 }

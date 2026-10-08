@@ -54,6 +54,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public Page<DepartmentResponse> getAll(
             String keyword,
+            boolean deleted,
             Pageable pageable
     ) {
 
@@ -63,7 +64,7 @@ public class DepartmentServiceImpl implements DepartmentService {
                         : keyword.trim();
 
         return repository
-                .search(normalizedKeyword, pageable)
+                .search(normalizedKeyword, deleted, pageable)
                 .map(mapper::toResponse);
     }
 
@@ -74,7 +75,7 @@ public class DepartmentServiceImpl implements DepartmentService {
             DepartmentRequest request
     ) {
 
-        Department entity = findDepartmentOrThrow(id);
+        Department entity = findActiveForUpdate(id);
 
         String name = request.departmentName().trim();
 
@@ -100,19 +101,36 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Transactional
     public void delete(Short id) {
 
-        Department entity = findDepartmentOrThrow(id);
+        Department entity = findActiveForUpdate(id);
 
         if (!entity.getAccounts().isEmpty()) {
             throw new ResourceConflictException(
                     "Không thể xóa phòng ban đang có tài khoản");
         }
 
-        repository.delete(entity);
-        repository.flush();
+        entity.softDelete();
+        repository.saveAndFlush(entity);
     }
 
+    @Override
+    @Transactional
+    public DepartmentResponse restore(Short id) {
+        Department entity = repository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng ban với ID: " + id));
+        if (entity.getDeletedAt() == null) {
+            throw new ResourceConflictException("Phòng ban đang hoạt động, không cần khôi phục");
+        }
+        entity.restore();
+        return mapper.toResponse(repository.saveAndFlush(entity));
+    }
+
+    private Department findActiveForUpdate(Short id) {
+        return repository.findByIdForUpdate(id)
+                .filter(entity -> entity.getDeletedAt() == null)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng ban đang hoạt động với ID: " + id));
+    }
     private Department findDepartmentOrThrow(Short id) {
-        return repository.findById(id)
+        return repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy phòng ban với ID: " + id
                 ));

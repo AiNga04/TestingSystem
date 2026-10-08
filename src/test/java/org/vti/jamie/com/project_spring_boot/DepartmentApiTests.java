@@ -56,6 +56,27 @@ class DepartmentApiTests {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.departmentName").value(name + "-new"));
         mvc.perform(delete(location)).andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true));
         mvc.perform(get(location)).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+        String renamed = name + "-new";
+        mvc.perform(get(URL).param("keyword", renamed))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.totalElements").value(0));
+        mvc.perform(get(URL).param("keyword", renamed).param("deleted", "true"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].deletedAt").isNotEmpty());
+        mvc.perform(put(location).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"departmentName\":\"" + renamed + "\"}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(delete(location)).andExpect(status().isNotFound());
+        mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"departmentName\":\"" + renamed + "\"}"))
+                .andExpect(status().isConflict());
+        // Restore preserves the original row and ID.
+        mvc.perform(patch(location + "/restore")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.departmentName").value(renamed))
+                .andExpect(jsonPath("$.data.deletedAt").isEmpty());
+        mvc.perform(get(location)).andExpect(status().isOk());
+        mvc.perform(get(URL).param("keyword", renamed).param("deleted", "true"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.totalElements").value(0));
+        mvc.perform(patch(location + "/restore")).andExpect(status().isConflict());
     }
 
     @ParameterizedTest
