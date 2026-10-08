@@ -8,7 +8,8 @@ CREATE TABLE Department (
 );
 CREATE TABLE `Position` (
     PositionID TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    PositionName ENUM('Dev', 'Test', 'Scrum Master', 'PM') NOT NULL UNIQUE
+    PositionName ENUM('Dev', 'Test', 'Scrum Master', 'PM') NOT NULL UNIQUE,
+    DeletedAt DATETIME NULL
 );
 CREATE TABLE `Account` (
     AccountID TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
