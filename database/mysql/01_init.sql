@@ -19,6 +19,7 @@ CREATE TABLE `Account` (
     DepartmentID TINYINT UNSIGNED NOT NULL,
     PositionID TINYINT UNSIGNED NOT NULL,
     CreateDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    DeletedAt DATETIME NULL,
     FOREIGN KEY (DepartmentID) REFERENCES Department(DepartmentID),
     FOREIGN KEY (PositionID) REFERENCES `Position`(PositionID)
 );
@@ -27,6 +28,7 @@ CREATE TABLE `Group` (
     GroupName VARCHAR(50) NOT NULL UNIQUE,
     CreatorID TINYINT UNSIGNED,
     CreateDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    DeletedAt DATETIME NULL,
     FOREIGN KEY (CreatorID) REFERENCES `Account`(AccountID)
 );
 CREATE TABLE GroupAccount (

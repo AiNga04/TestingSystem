@@ -30,6 +30,9 @@ public class GroupAccount {
     public GroupAccount(Group group, Account account) {
         this.group = Objects.requireNonNull(group);
         this.account = Objects.requireNonNull(account);
+        if (group.getId() == null || account.getId() == null) {
+            throw new IllegalArgumentException("Group and Account must be persisted before adding membership");
+        }
         this.id = new GroupAccountId(
                 group.getId(),
                 account.getId()

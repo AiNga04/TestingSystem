@@ -1,10 +1,5 @@
 package org.vti.jamie.com.project_spring_boot.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-
-import java.io.Serializable;
-
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -32,6 +27,23 @@ public class Group {
 
     @Column(name = "CreateDate", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "DeletedAt")
+    @Setter(AccessLevel.NONE)
+    private LocalDateTime deletedAt;
+
+    public Group(String name, Account creator) {
+        this.name = Objects.requireNonNull(name);
+        this.creator = Objects.requireNonNull(creator);
+    }
+
+    public void softDelete() {
+        if (deletedAt == null) deletedAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        deletedAt = null;
+    }
 
     @OneToMany(
             mappedBy = "group",

@@ -38,6 +38,17 @@ public class Account {
     @Column(name = "CreateDate", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "DeletedAt")
+    private LocalDateTime deletedAt;
+
+    public void softDelete() {
+        if (deletedAt == null) deletedAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        deletedAt = null;
+    }
+
     @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
     private Set<Group> createdGroups = new HashSet<>();
 

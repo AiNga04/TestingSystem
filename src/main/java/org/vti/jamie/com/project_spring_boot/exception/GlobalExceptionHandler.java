@@ -7,6 +7,8 @@ import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.vti.jamie.com.project_spring_boot.dto.response.ApiResponse;
 import java.util.LinkedHashMap;
@@ -51,6 +53,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ex.getBindingResult().getFieldErrors().forEach(e -> errors.putIfAbsent(e.getField(),
                 e.getDefaultMessage() == null ? "Giá trị không hợp lệ" : e.getDefaultMessage()));
         return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Dữ liệu đầu vào không hợp lệ", errors);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        if (ex.isForReturnValue()) {
+            log.error("Response validation failed", ex);
+            return handleExceptionInternal(ex, null, headers, status, request);
+        }
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (var result : ex.getParameterValidationResults()) {
+            String parameter = result.getMethodParameter().getParameterName();
+            for (var validationError : result.getResolvableErrors()) {
+                String field = validationError instanceof FieldError fieldError ? fieldError.getField()
+                        : parameter == null ? "parameter" : parameter;
+                errors.putIfAbsent(field, validationError.getDefaultMessage() == null
+                        ? "Giá trị không hợp lệ" : validationError.getDefaultMessage());
+            }
+        }
+        return new ResponseEntity<>(ApiResponse.error(400, "VALIDATION_ERROR", "Dữ liệu đầu vào không hợp lệ", errors),
+                headers, HttpStatus.BAD_REQUEST);
     }
 
     @Override
